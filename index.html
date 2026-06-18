@@ -22,6 +22,7 @@
     --dev: #4ecdc4;
     --brk: #45b7d1;
     --oncall: #f7b731;
+    --timeoff: #a29bfe;
     --warn: #ffa552;
     --success: #51cf66;
     --danger: #ff6b6b;
@@ -58,6 +59,7 @@
   .meta-badge.brk { border-color: var(--brk); color: var(--brk); }
   .meta-badge.offhours { border-color: var(--warn); color: var(--warn); }
   .meta-badge.oncall { border-color: var(--oncall); color: var(--oncall); }
+  .meta-badge.timeoff { border-color: var(--timeoff); color: var(--timeoff); }
 
   .select-group { margin-bottom: 12px; }
   .select-label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -68,6 +70,7 @@
   .pill.selected.dev { background: rgba(78,205,196,0.15); border-color: var(--dev); color: var(--dev); }
   .pill.selected.brk { background: rgba(69,183,209,0.15); border-color: var(--brk); color: var(--brk); }
   .pill.selected.oncall { background: rgba(247,183,49,0.15); border-color: var(--oncall); color: var(--oncall); }
+  .pill.selected.timeoff { background: rgba(162,155,254,0.15); border-color: var(--timeoff); color: var(--timeoff); }
 
   .select-native { width: 100%; background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; color: var(--text); font-size: 14px; appearance: none; -webkit-appearance: none; cursor: pointer; }
   .select-native:focus { outline: none; border-color: var(--accent); }
@@ -117,6 +120,7 @@
   .log-badge.dev { background: rgba(78,205,196,0.15); color: var(--dev); }
   .log-badge.brk { background: rgba(69,183,209,0.15); color: var(--brk); }
   .log-badge.oncall { background: rgba(247,183,49,0.15); color: var(--oncall); }
+  .log-badge.timeoff { background: rgba(162,155,254,0.15); color: var(--timeoff); }
   .log-badge.offhours { background: rgba(255,165,82,0.15); color: var(--warn); }
   .log-badge.verbal { background: rgba(108,99,255,0.15); color: var(--accent2); }
   .log-time { font-size: 11px; color: var(--text2); }
@@ -140,6 +144,7 @@
   .mini-val.dev { color: var(--dev); }
   .mini-val.brk { color: var(--brk); }
   .mini-val.oncall { color: var(--oncall); }
+  .mini-val.timeoff { color: var(--timeoff); }
   .mini-val.warn { color: var(--warn); }
 
   .manage-section { margin-bottom: 20px; }
@@ -223,7 +228,7 @@
       </select>
     </div>
 
-    <div class="select-group">
+    <div class="select-group" id="requester-group">
       <div class="select-label">Requester</div>
       <select class="select-native" id="requester-select">
         <option value="">— select requester —</option>
@@ -251,6 +256,100 @@
     </div>
 
     <button class="start-btn disabled" id="start-btn" onclick="handleStartStop()">Select category + label</button>
+    <button class="export-btn" style="margin-top:10px;" onclick="showManualEntry()">✏️ &nbsp;Log Manual / Back-fill Entry</button>
+  </div>
+
+  <!-- MANUAL ENTRY SCREEN -->
+  <div class="screen" id="screen-manual">
+    <div class="stats-card" style="margin-bottom:14px;">
+      <div class="stats-title">Manual / Back-fill Entry</div>
+      <p style="font-size:12px;color:var(--text2);line-height:1.6;">Use this for entries you couldn't log in real time. A back-fill note will be added automatically to maintain an honest record.</p>
+    </div>
+
+    <div class="select-group">
+      <div class="select-label">Category</div>
+      <div class="pill-row" id="manual-cat-pills"></div>
+    </div>
+
+    <div class="select-group">
+      <div class="select-label">Label</div>
+      <select class="select-native" id="manual-label-select" onchange="onManualLabelChange()">
+        <option value="">— select category first —</option>
+      </select>
+    </div>
+
+    <div class="select-group" id="manual-requester-group">
+      <div class="select-label">Requester</div>
+      <select class="select-native" id="manual-requester-select">
+        <option value="">— select requester —</option>
+      </select>
+    </div>
+
+    <div class="select-group">
+      <div class="select-label">Location</div>
+      <select class="select-native" id="manual-location-select">
+        <option value="Office">Office</option>
+        <option value="Remote / Home">Remote / Home</option>
+        <option value="Off-site">Off-site</option>
+        <option value="On-Call / Mobile">On-Call / Mobile</option>
+      </select>
+    </div>
+
+    <div class="select-group">
+      <div class="select-label">Date</div>
+      <input type="date" class="select-native" id="manual-date" />
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <div style="flex:1;">
+        <div class="select-label" style="font-size:12px;color:var(--text2);font-weight:500;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Start Time</div>
+        <input type="time" class="select-native" id="manual-start-time" />
+      </div>
+      <div style="flex:1;">
+        <div class="select-label" style="font-size:12px;color:var(--text2);font-weight:500;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Duration</div>
+        <select class="select-native" id="manual-duration">
+          <option value="15">15 min</option>
+          <option value="30">30 min</option>
+          <option value="45">45 min</option>
+          <option value="60">1 hour</option>
+          <option value="90">1.5 hours</option>
+          <option value="120">2 hours</option>
+          <option value="180">3 hours</option>
+          <option value="240">4 hours</option>
+          <option value="480">Full Day (8hr)</option>
+          <option value="custom">Custom...</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="select-group" id="manual-custom-duration-group" style="display:none;">
+      <div class="select-label">Custom Duration (minutes)</div>
+      <input type="number" class="select-native" id="manual-custom-duration" placeholder="e.g. 25" min="1" max="999" />
+    </div>
+
+    <div class="off-hours-row" style="margin-bottom:12px;">
+      <div>
+        <div class="off-hours-label">Off-hours / Off-clock</div>
+      </div>
+      <div class="toggle" id="manual-offhours-toggle" onclick="toggleManualOffHours()">
+        <div class="toggle-thumb"></div>
+      </div>
+    </div>
+
+    <div class="select-group">
+      <div class="select-label">Notes</div>
+      <textarea class="text-input" id="manual-notes" placeholder="What happened? Who said what? Keep it factual..." rows="3" style="resize:none;"></textarea>
+    </div>
+
+    <div class="verbal-row" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:12px;">
+      <div class="verbal-label">Verbal request (no paper trail)?</div>
+      <div class="toggle" id="manual-verbal-toggle" onclick="toggleManualVerbal()">
+        <div class="toggle-thumb"></div>
+      </div>
+    </div>
+
+    <button class="start-btn go" onclick="saveManualEntry()" style="margin-bottom:10px;">Save Entry</button>
+    <button class="skip-btn" onclick="showScreen('timer')">Cancel</button>
   </div>
 
   <!-- LOG SCREEN -->
@@ -261,6 +360,7 @@
       <div class="filter-pill" onclick="filterLog('Development', this)">Development</div>
       <div class="filter-pill" onclick="filterLog('Break', this)">Break</div>
       <div class="filter-pill" onclick="filterLog('On-Call', this)">On-Call</div>
+      <div class="filter-pill" onclick="filterLog('Time Off', this)">Time Off</div>
       <div class="filter-pill" onclick="filterLog('offhours', this)">Off-Hours</div>
     </div>
     <div id="log-list"></div>
@@ -273,6 +373,11 @@
 
   <!-- MANAGE SCREEN -->
   <div class="screen" id="screen-manage">
+    <div class="manage-section">
+      <button class="export-btn primary" onclick="seedDefaults()" style="margin-bottom:16px;">
+        🌱 &nbsp;Add Missing Default Labels
+      </button>
+    </div>
     <div class="manage-section">
       <div class="manage-title">
         Labels
@@ -338,6 +443,7 @@
       <option value="Development">Development</option>
       <option value="On-Call">On-Call</option>
       <option value="Break">Break</option>
+      <option value="Time Off">Time Off</option>
     </select>
     <div class="modal-actions">
       <button class="modal-btn cancel" onclick="closeModal()">Cancel</button>
@@ -374,6 +480,22 @@ const DEFAULT_LABELS = [
   {id:'l22', name:'Incident Response', category:'On-Call'},
   {id:'l23', name:'Follow-up / RCA', category:'On-Call'},
   {id:'l24', name:'Comp Day', category:'On-Call'},
+  {id:'l25', name:'On-Call Start', category:'On-Call'},
+  {id:'l26', name:'On-Call End', category:'On-Call'},
+  {id:'l27', name:'Vendor / Support Call', category:'Operational'},
+  {id:'l28', name:'Documentation / Runbook', category:'Operational'},
+  {id:'l29', name:'On-Call Handoff', category:'Operational'},
+  {id:'l30', name:'Project Meeting', category:'Operational'},
+  {id:'l31', name:'Project Meeting', category:'Development'},
+  {id:'l32', name:'Documentation / Standards', category:'Development'},
+  {id:'l33', name:'Vendor Training', category:'Development'},
+  {id:'l34', name:'Certification Study', category:'Development'},
+  {id:'l35', name:'Vacation', category:'Time Off'},
+  {id:'l36', name:'Sick', category:'Time Off'},
+  {id:'l37', name:'Personal Day', category:'Time Off'},
+  {id:'l38', name:'Holiday', category:'Time Off'},
+  {id:'l39', name:'Bereavement', category:'Time Off'},
+  {id:'l40', name:'Half Day', category:'Time Off'},
 ];
 const DEFAULT_REQUESTERS = [
   {id:'r1', name:'Archie'},
@@ -406,6 +528,43 @@ let offHoursManual = null;
 let verbalFlag = false;
 let currentEntry = null;
 let modalMode = null;
+let manualCat = null;
+let manualOffHours = false;
+let manualVerbal = false;
+
+// Labels that don't need a requester
+const NO_REQUESTER_LABELS = [
+  'Standby','Comp Day','Lunch','Break','Follow-up / RCA',
+  'On-Call Start','On-Call End','On-Call Handoff',
+  'Vacation','Sick','Personal Day','Holiday','Bereavement','Half Day'
+];
+// Labels that auto-set requester by name
+const AUTO_REQUESTER = { 'Comp Day': 'Archie' };
+
+// Seed function — adds any missing default labels/requesters without touching existing data
+function seedDefaults() {
+  let added = 0;
+  DEFAULT_LABELS.forEach(dl => {
+    const exists = state.labels.some(l => l.name === dl.name && l.category === dl.category);
+    if (!exists) {
+      state.labels.push({...dl, id: 'l' + Date.now() + Math.random()});
+      added++;
+    }
+  });
+  DEFAULT_REQUESTERS.forEach(dr => {
+    const exists = state.requesters.some(r => r.name === dr.name);
+    if (!exists) {
+      state.requesters.push({...dr, id: 'r' + Date.now() + Math.random()});
+      added++;
+    }
+  });
+  saveData();
+  renderManage();
+  renderLabelSelect();
+  renderRequesterSelect();
+  renderManualLabelSelect();
+  alert(added > 0 ? `✅ Added ${added} missing item${added > 1 ? 's' : ''}.` : '✅ Already up to date — nothing to add.');
+}
 
 function isOffHours() {
   if (offHoursManual !== null) return offHoursManual;
@@ -442,11 +601,12 @@ function catClass(cat) {
   if (cat === 'Development') return 'dev';
   if (cat === 'Break') return 'brk';
   if (cat === 'On-Call') return 'oncall';
+  if (cat === 'Time Off') return 'timeoff';
   return '';
 }
 
 function renderCatPills() {
-  const cats = ['Operational', 'Development', 'On-Call', 'Break'];
+  const cats = ['Operational', 'Development', 'On-Call', 'Break', 'Time Off'];
   const container = document.getElementById('cat-pills');
   container.innerHTML = cats.map(c => 
     `<div class="pill ${selectedCat === c ? 'selected ' + catClass(c) : ''}" onclick="selectCat('${c}')">${c}</div>`
@@ -476,13 +636,159 @@ function renderLabelSelect() {
 
 function onLabelChange() {
   selectedLabel = document.getElementById('label-select').value;
+  const labelObj = state.labels.find(l => l.id === selectedLabel);
+  const labelName = labelObj ? labelObj.name : '';
+  const reqGroup = document.getElementById('requester-group');
+  const reqSel = document.getElementById('requester-select');
+  if (NO_REQUESTER_LABELS.includes(labelName)) {
+    reqGroup.style.display = 'none';
+  } else {
+    reqGroup.style.display = 'block';
+    if (AUTO_REQUESTER[labelName]) {
+      const autoR = state.requesters.find(r => r.name === AUTO_REQUESTER[labelName]);
+      if (autoR) reqSel.value = autoR.id;
+    }
+  }
   updateStartBtn();
 }
 
 function renderRequesterSelect() {
-  const sel = document.getElementById('requester-select');
-  sel.innerHTML = '<option value="">— select requester —</option>' +
+  const opts = '<option value="">— select requester —</option>' +
     state.requesters.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+  document.getElementById('requester-select').innerHTML = opts;
+  const manSel = document.getElementById('manual-requester-select');
+  if (manSel) manSel.innerHTML = opts;
+}
+
+function showManualEntry() {
+  manualCat = null;
+  manualOffHours = false;
+  manualVerbal = false;
+  document.getElementById('manual-offhours-toggle').classList.remove('on');
+  document.getElementById('manual-verbal-toggle').classList.remove('on');
+  document.getElementById('manual-notes').value = '';
+  document.getElementById('manual-custom-duration-group').style.display = 'none';
+  // Default date to today, time to now
+  const now = new Date();
+  document.getElementById('manual-date').value = now.toISOString().slice(0,10);
+  document.getElementById('manual-start-time').value = now.toTimeString().slice(0,5);
+  renderManualCatPills();
+  renderManualLabelSelect();
+  renderRequesterSelect();
+  showScreen('manual');
+}
+
+function renderManualCatPills() {
+  const cats = ['Operational', 'Development', 'On-Call', 'Break', 'Time Off'];
+  const container = document.getElementById('manual-cat-pills');
+  container.innerHTML = cats.map(c =>
+    `<div class="pill ${manualCat === c ? 'selected ' + catClass(c) : ''}" onclick="selectManualCat('${c}')">${c}</div>`
+  ).join('');
+}
+
+function selectManualCat(cat) {
+  manualCat = cat;
+  renderManualCatPills();
+  renderManualLabelSelect();
+}
+
+function renderManualLabelSelect() {
+  const sel = document.getElementById('manual-label-select');
+  if (!manualCat) {
+    sel.innerHTML = '<option value="">— select category first —</option>';
+    return;
+  }
+  const labels = state.labels.filter(l => l.category === manualCat);
+  sel.innerHTML = '<option value="">— select label —</option>' +
+    labels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+  sel.value = '';
+  document.getElementById('manual-requester-group').style.display = 'block';
+}
+
+function onManualLabelChange() {
+  const sel = document.getElementById('manual-label-select');
+  const labelObj = state.labels.find(l => l.id === sel.value);
+  const labelName = labelObj ? labelObj.name : '';
+  const reqGroup = document.getElementById('manual-requester-group');
+  const reqSel = document.getElementById('manual-requester-select');
+  if (NO_REQUESTER_LABELS.includes(labelName)) {
+    reqGroup.style.display = 'none';
+  } else {
+    reqGroup.style.display = 'block';
+    if (AUTO_REQUESTER[labelName]) {
+      const autoR = state.requesters.find(r => r.name === AUTO_REQUESTER[labelName]);
+      if (autoR) reqSel.value = autoR.id;
+    }
+  }
+  // Full Day duration for Comp Day
+  if (labelName === 'Comp Day') {
+    document.getElementById('manual-duration').value = '480';
+  }
+  // Handle duration custom
+  document.getElementById('manual-duration').dispatchEvent(new Event('change'));
+}
+
+function toggleManualOffHours() {
+  manualOffHours = !manualOffHours;
+  const t = document.getElementById('manual-offhours-toggle');
+  if (manualOffHours) t.classList.add('on'); else t.classList.remove('on');
+}
+
+function toggleManualVerbal() {
+  manualVerbal = !manualVerbal;
+  const t = document.getElementById('manual-verbal-toggle');
+  if (manualVerbal) t.classList.add('on'); else t.classList.remove('on');
+}
+
+function saveManualEntry() {
+  const labelSel = document.getElementById('manual-label-select');
+  const labelObj = state.labels.find(l => l.id === labelSel.value);
+  if (!manualCat || !labelSel.value || !labelObj) {
+    alert('Please select a category and label.');
+    return;
+  }
+  const dateVal = document.getElementById('manual-date').value;
+  const timeVal = document.getElementById('manual-start-time').value;
+  if (!dateVal || !timeVal) {
+    alert('Please enter a date and start time.');
+    return;
+  }
+  const durSel = document.getElementById('manual-duration').value;
+  let durationMin;
+  if (durSel === 'custom') {
+    durationMin = parseInt(document.getElementById('manual-custom-duration').value) || 0;
+  } else {
+    durationMin = parseInt(durSel);
+  }
+  const startDt = new Date(dateVal + 'T' + timeVal);
+  const endDt = new Date(startDt.getTime() + durationMin * 60000);
+  const requesterObj = state.requesters.find(r => r.id === document.getElementById('manual-requester-select').value);
+  const userNotes = document.getElementById('manual-notes').value.trim();
+  const backfillNote = '[Back-filled entry — not logged in real time]';
+  const isToday = new Date(dateVal).toDateString() === new Date().toDateString();
+  const sameDay = !isToday;
+  const finalNotes = (userNotes ? userNotes + '\n' : '') + (sameDay ? backfillNote : '[Manual entry — same day]');
+  const entry = {
+    id: 'e' + Date.now(),
+    start: startDt.toISOString(),
+    end: endDt.toISOString(),
+    durationMin,
+    category: manualCat,
+    labelId: labelSel.value,
+    labelName: labelObj.name,
+    requesterId: requesterObj ? requesterObj.id : '',
+    requesterName: requesterObj ? requesterObj.name : '',
+    location: document.getElementById('manual-location-select').value || 'Office',
+    offHours: manualOffHours,
+    notes: finalNotes,
+    verbal: manualVerbal,
+    backfilled: sameDay,
+  };
+  state.entries.unshift(entry);
+  state.entries.sort((a,b) => new Date(b.start) - new Date(a.start));
+  saveData();
+  showScreen('timer');
+  document.getElementById('timer-label').textContent = 'Manual entry saved.';
 }
 
 function updateStartBtn() {
@@ -629,6 +935,7 @@ function renderLog() {
   if (logFilter === 'Operational') entries = entries.filter(e => e.category === 'Operational');
   else if (logFilter === 'Development') entries = entries.filter(e => e.category === 'Development');
   else if (logFilter === 'On-Call') entries = entries.filter(e => e.category === 'On-Call');
+  else if (logFilter === 'Time Off') entries = entries.filter(e => e.category === 'Time Off');
   else if (logFilter === 'Break') entries = entries.filter(e => e.category === 'Break');
   else if (logFilter === 'offhours') entries = entries.filter(e => e.offHours);
 
@@ -660,6 +967,7 @@ function renderLog() {
         <span class="log-badge ${cc}">${e.category}</span>
         ${e.offHours ? '<span class="log-badge offhours">Off-Hours</span>' : ''}
         ${e.verbal ? '<span class="log-badge verbal">Verbal only</span>' : ''}
+        ${e.backfilled ? '<span class="log-badge" style="background:rgba(144,144,168,0.15);color:var(--text2);">Back-filled</span>' : ''}
       </div>
       <div class="log-time">${timeStr}${e.requesterName ? ' · ' + e.requesterName : ''}${e.location ? ' · 📍' + e.location : ''}</div>
       ${e.notes ? `<div class="log-notes">${e.notes}</div>` : ''}
@@ -685,16 +993,19 @@ function renderStats() {
   const todayDev = catMin(today, 'Development');
   const todayOC = catMin(today, 'On-Call');
   const todayBrk = catMin(today, 'Break');
+  const todayTO = catMin(today, 'Time Off');
   const todayOH = sumMin(today.filter(e => e.offHours));
 
   const weekOp = catMin(thisWeek, 'Operational');
   const weekDev = catMin(thisWeek, 'Development');
   const weekOC = catMin(thisWeek, 'On-Call');
+  const weekTO = catMin(thisWeek, 'Time Off');
   const weekTotal = weekOp + weekDev + weekOC;
 
   const allOp = catMin(all, 'Operational');
   const allDev = catMin(all, 'Development');
   const allOC = catMin(all, 'On-Call');
+  const allTO = catMin(all, 'Time Off');
   const allTotal = allOp + allDev + allOC;
 
   const missedLunch = checkMissedLunch();
@@ -724,6 +1035,7 @@ function renderStats() {
     <div class="stats-row"><span class="stats-name">Development</span><span class="stats-val dev">${fmtMin(todayDev)}</span></div>
     <div class="stats-row"><span class="stats-name">On-Call</span><span class="stats-val oncall">${fmtMin(todayOC)}</span></div>
     <div class="stats-row"><span class="stats-name">Breaks</span><span class="stats-val brk">${fmtMin(todayBrk)}</span></div>
+    ${todayTO > 0 ? `<div class="stats-row"><span class="stats-name">Time Off</span><span class="stats-val timeoff">${fmtMin(todayTO)}</span></div>` : ''}
     <div class="stats-row"><span class="stats-name">Off-hours</span><span class="stats-val warn">${fmtMin(todayOH)}</span></div>
     <div class="stats-row"><span class="stats-name">Entries logged</span><span class="stats-val">${today.length}</span></div>
   </div>`;
@@ -733,6 +1045,7 @@ function renderStats() {
     <div class="stats-row"><span class="stats-name">Operational</span><span class="stats-val op">${fmtMin(weekOp)} (${pct(weekOp,weekTotal)}%)</span></div>
     <div class="stats-row"><span class="stats-name">Development</span><span class="stats-val dev">${fmtMin(weekDev)} (${pct(weekDev,weekTotal)}%)</span></div>
     <div class="stats-row"><span class="stats-name">On-Call</span><span class="stats-val oncall">${fmtMin(weekOC)} (${pct(weekOC,weekTotal)}%)</span></div>
+    ${weekTO > 0 ? `<div class="stats-row"><span class="stats-name">Time Off</span><span class="stats-val timeoff">${fmtMin(weekTO)}</span></div>` : ''}
     <div class="stats-row"><span class="stats-name">Total tracked</span><span class="stats-val">${fmtMin(weekTotal)}</span></div>
   </div>`;
 
@@ -924,6 +1237,12 @@ renderRequesterSelect();
 updateOffHoursUI();
 updateStartBtn();
 setInterval(updateOffHoursUI, 60000);
+
+// Wire up custom duration toggle
+document.getElementById('manual-duration').addEventListener('change', function() {
+  const customGroup = document.getElementById('manual-custom-duration-group');
+  customGroup.style.display = this.value === 'custom' ? 'block' : 'none';
+});
 </script>
 </body>
 </html>
