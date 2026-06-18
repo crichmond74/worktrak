@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1a2e">
+<title>WorkTrak</title>
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --bg2: #1a1a2e;
+    --bg3: #16213e;
+    --card: #1e1e30;
+    --border: #2a2a45;
+    --text: #e8e8f0;
+    --text2: #9090a8;
+    --accent: #6c63ff;
+    --accent2: #8b7fff;
+    --op: #ff6b6b;
+    --dev: #4ecdc4;
+    --brk: #45b7d1;
+    --warn: #ffa552;
+    --success: #51cf66;
+    --danger: #ff6b6b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; overflow-x: hidden; }
+  
+  .app { max-width: 480px; margin: 0 auto; padding-bottom: 80px; }
+  
+  .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 16px 20px 12px; position: sticky; top: 0; z-index: 100; }
+  .header-top { display: flex; justify-content: space-between; align-items: center; }
+  .app-title { font-size: 20px; font-weight: 700; color: var(--accent2); letter-spacing: -0.5px; }
+  .header-actions { display: flex; gap: 8px; }
+  .icon-btn { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; color: var(--text2); font-size: 18px; cursor: pointer; }
+  .icon-btn:active { opacity: 0.7; transform: scale(0.95); }
+
+  .nav { display: flex; background: var(--bg2); border-bottom: 1px solid var(--border); }
+  .nav-btn { flex: 1; padding: 10px 4px; background: none; border: none; color: var(--text2); font-size: 12px; font-weight: 500; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; transition: color 0.2s; }
+  .nav-btn svg { width: 20px; height: 20px; }
+  .nav-btn.active { color: var(--accent2); border-bottom: 2px solid var(--accent2); }
+  .nav-btn:active { opacity: 0.7; }
+
+  .screen { display: none; padding: 16px 16px 0; }
+  .screen.active { display: block; }
+
+  .timer-display { background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; padding: 24px 20px; margin-bottom: 16px; text-align: center; }
+  .timer-clock { font-size: 52px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -2px; color: var(--text); line-height: 1; }
+  .timer-clock.running { color: var(--success); }
+  .timer-label { font-size: 13px; color: var(--text2); margin-top: 6px; min-height: 18px; }
+  .timer-meta { display: flex; gap: 8px; margin-top: 10px; justify-content: center; flex-wrap: wrap; }
+  .meta-badge { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 11px; color: var(--text2); }
+  .meta-badge.op { border-color: var(--op); color: var(--op); }
+  .meta-badge.dev { border-color: var(--dev); color: var(--dev); }
+  .meta-badge.brk { border-color: var(--brk); color: var(--brk); }
+  .meta-badge.offhours { border-color: var(--warn); color: var(--warn); }
+
+  .select-group { margin-bottom: 12px; }
+  .select-label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .pill-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill { background: var(--card); border: 1.5px solid var(--border); border-radius: 20px; padding: 8px 14px; font-size: 13px; color: var(--text2); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .pill:active { transform: scale(0.96); }
+  .pill.selected.op { background: rgba(255,107,107,0.15); border-color: var(--op); color: var(--op); }
+  .pill.selected.dev { background: rgba(78,205,196,0.15); border-color: var(--dev); color: var(--dev); }
+  .pill.selected.brk { background: rgba(69,183,209,0.15); border-color: var(--brk); color: var(--brk); }
+
+  .select-native { width: 100%; background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; color: var(--text); font-size: 14px; appearance: none; -webkit-appearance: none; cursor: pointer; }
+  .select-native:focus { outline: none; border-color: var(--accent); }
+
+  .text-input { width: 100%; background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; color: var(--text); font-size: 14px; font-family: inherit; }
+  .text-input:focus { outline: none; border-color: var(--accent); }
+  .text-input::placeholder { color: var(--text2); }
+
+  .off-hours-row { display: flex; align-items: center; justify-content: space-between; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
+  .off-hours-label { font-size: 13px; color: var(--text2); }
+  .toggle { width: 44px; height: 26px; background: var(--border); border-radius: 13px; position: relative; cursor: pointer; transition: background 0.2s; }
+  .toggle.on { background: var(--warn); }
+  .toggle-thumb { width: 20px; height: 20px; background: white; border-radius: 50%; position: absolute; top: 3px; left: 3px; transition: transform 0.2s; }
+  .toggle.on .toggle-thumb { transform: translateX(18px); }
+
+  .start-btn { width: 100%; padding: 18px; border-radius: 16px; border: none; font-size: 18px; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; transition: all 0.15s; }
+  .start-btn:active { transform: scale(0.97); }
+  .start-btn.ready { background: var(--accent); color: white; }
+  .start-btn.go { background: var(--success); color: white; }
+  .start-btn.stop { background: var(--danger); color: white; }
+  .start-btn.disabled { background: var(--border); color: var(--text2); cursor: not-allowed; }
+
+  .notes-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; display: flex; align-items: flex-end; }
+  .notes-sheet { background: var(--bg2); border-radius: 20px 20px 0 0; padding: 20px 16px 40px; width: 100%; }
+  .notes-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .notes-sub { font-size: 12px; color: var(--text2); margin-bottom: 14px; }
+  .notes-textarea { width: 100%; background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; color: var(--text); font-size: 14px; font-family: inherit; resize: none; min-height: 100px; }
+  .notes-textarea:focus { outline: none; border-color: var(--accent); }
+  .verbal-row { display: flex; align-items: center; justify-content: space-between; margin: 12px 0; }
+  .verbal-label { font-size: 13px; color: var(--text2); }
+  .save-btn { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: 700; background: var(--accent); color: white; cursor: pointer; margin-top: 14px; }
+  .save-btn:active { transform: scale(0.97); }
+  .skip-btn { width: 100%; padding: 12px; border-radius: 14px; border: 1px solid var(--border); font-size: 14px; background: none; color: var(--text2); cursor: pointer; margin-top: 8px; }
+
+  .log-filter { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 12px; }
+  .log-filter::-webkit-scrollbar { display: none; }
+  .filter-pill { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; color: var(--text2); cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+  .filter-pill.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+  .log-entry { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
+  .log-entry-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+  .log-label { font-size: 14px; font-weight: 600; color: var(--text); }
+  .log-duration { font-size: 13px; font-weight: 600; color: var(--accent2); }
+  .log-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+  .log-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+  .log-badge.op { background: rgba(255,107,107,0.15); color: var(--op); }
+  .log-badge.dev { background: rgba(78,205,196,0.15); color: var(--dev); }
+  .log-badge.brk { background: rgba(69,183,209,0.15); color: var(--brk); }
+  .log-badge.offhours { background: rgba(255,165,82,0.15); color: var(--warn); }
+  .log-badge.verbal { background: rgba(108,99,255,0.15); color: var(--accent2); }
+  .log-time { font-size: 11px; color: var(--text2); }
+  .log-notes { font-size: 12px; color: var(--text2); margin-top: 6px; border-top: 1px solid var(--border); padding-top: 6px; line-height: 1.5; }
+  .log-requester { font-size: 12px; color: var(--text2); }
+
+  .stats-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  .stats-title { font-size: 12px; color: var(--text2); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .stats-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .stats-row:last-child { border-bottom: none; }
+  .stats-name { font-size: 13px; color: var(--text); }
+  .stats-val { font-size: 13px; font-weight: 600; color: var(--accent2); }
+  .big-stat { text-align: center; padding: 10px; }
+  .big-stat-val { font-size: 32px; font-weight: 700; color: var(--text); }
+  .big-stat-label { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .mini-stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; text-align: center; }
+  .mini-val { font-size: 22px; font-weight: 700; }
+  .mini-label { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .mini-val.op { color: var(--op); }
+  .mini-val.dev { color: var(--dev); }
+  .mini-val.brk { color: var(--brk); }
+  .mini-val.warn { color: var(--warn); }
+
+  .manage-section { margin-bottom: 20px; }
+  .manage-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+  .add-btn { background: var(--accent); border: none; border-radius: 8px; padding: 6px 12px; color: white; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .manage-item { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .manage-item-name { font-size: 13px; color: var(--text); }
+  .manage-item-cat { font-size: 11px; color: var(--text2); }
+  .del-btn { background: none; border: none; color: var(--danger); font-size: 16px; cursor: pointer; padding: 4px; }
+
+  .export-btn { width: 100%; padding: 14px; border-radius: 14px; border: 1.5px solid var(--border); font-size: 14px; font-weight: 600; background: var(--card); color: var(--text); cursor: pointer; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .export-btn:active { transform: scale(0.97); }
+  .export-btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; padding: 20px; width: 100%; max-width: 380px; }
+  .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 14px; }
+  .modal-input { width: 100%; background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; color: var(--text); font-size: 14px; font-family: inherit; margin-bottom: 10px; }
+  .modal-input:focus { outline: none; border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 4px; }
+  .modal-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .modal-btn.cancel { background: var(--card); color: var(--text2); border: 1px solid var(--border); }
+  .modal-btn.confirm { background: var(--accent); color: white; }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text2); font-size: 14px; }
+  .empty-icon { font-size: 40px; margin-bottom: 10px; }
+
+  .section-date { font-size: 11px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px; padding: 0 2px; }
+
+  .missed-break-badge { background: rgba(255,107,107,0.15); border: 1px solid var(--danger); border-radius: 10px; padding: 8px 14px; font-size: 12px; color: var(--danger); margin-bottom: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <div class="app-title">WorkTrak</div>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="showScreen('export')" title="Export">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="nav-btn active" onclick="showScreen('timer')" id="nav-timer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Track
+      </button>
+      <button class="nav-btn" onclick="showScreen('log')" id="nav-log">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Log
+      </button>
+      <button class="nav-btn" onclick="showScreen('stats')" id="nav-stats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Stats
+      </button>
+      <button class="nav-btn" onclick="showScreen('manage')" id="nav-manage">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+        Manage
+      </button>
+    </div>
+  </div>
+
+  <!-- TIMER SCREEN -->
+  <div class="screen active" id="screen-timer">
+    <div class="timer-display">
+      <div class="timer-clock" id="timer-clock">00:00:00</div>
+      <div class="timer-label" id="timer-label">Select category and label to begin</div>
+      <div class="timer-meta" id="timer-meta"></div>
+    </div>
+
+    <div class="select-group">
+      <div class="select-label">Category</div>
+      <div class="pill-row" id="cat-pills"></div>
+    </div>
+
+    <div class="select-group">
+      <div class="select-label">Label</div>
+      <select class="select-native" id="label-select" onchange="onLabelChange()">
+        <option value="">— select category first —</option>
+      </select>
+    </div>
+
+    <div class="select-group">
+      <div class="select-label">Requester</div>
+      <select class="select-native" id="requester-select">
+        <option value="">— select requester —</option>
+      </select>
+    </div>
+
+    <div class="off-hours-row">
+      <div>
+        <div class="off-hours-label">Off-hours / Off-clock</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px;" id="offhours-auto-label">Auto-detected from time</div>
+      </div>
+      <div class="toggle" id="offhours-toggle" onclick="toggleOffHours()">
+        <div class="toggle-thumb"></div>
+      </div>
+    </div>
+
+    <button class="start-btn disabled" id="start-btn" onclick="handleStartStop()">Select category + label</button>
+  </div>
+
+  <!-- LOG SCREEN -->
+  <div class="screen" id="screen-log">
+    <div class="log-filter" id="log-filter">
+      <div class="filter-pill active" onclick="filterLog('all', this)">All</div>
+      <div class="filter-pill" onclick="filterLog('Operational', this)">Operational</div>
+      <div class="filter-pill" onclick="filterLog('Development', this)">Development</div>
+      <div class="filter-pill" onclick="filterLog('Break', this)">Break</div>
+      <div class="filter-pill" onclick="filterLog('offhours', this)">Off-Hours</div>
+    </div>
+    <div id="log-list"></div>
+  </div>
+
+  <!-- STATS SCREEN -->
+  <div class="screen" id="screen-stats">
+    <div id="stats-content"></div>
+  </div>
+
+  <!-- MANAGE SCREEN -->
+  <div class="screen" id="screen-manage">
+    <div class="manage-section">
+      <div class="manage-title">
+        Labels
+        <button class="add-btn" onclick="showAddLabel()">+ Add Label</button>
+      </div>
+      <div id="label-list"></div>
+    </div>
+    <div class="manage-section">
+      <div class="manage-title">
+        Requesters
+        <button class="add-btn" onclick="showAddRequester()">+ Add</button>
+      </div>
+      <div id="requester-list"></div>
+    </div>
+  </div>
+
+  <!-- EXPORT SCREEN -->
+  <div class="screen" id="screen-export">
+    <div class="stats-card">
+      <div class="stats-title">Export your data</div>
+      <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;">All data lives on this device. Export regularly as your backup. JSON preserves everything for re-import. CSV opens in Excel.</p>
+      <button class="export-btn primary" onclick="exportJSON()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export JSON (full backup)
+      </button>
+      <button class="export-btn" onclick="exportCSV()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Export CSV (Excel)
+      </button>
+      <button class="export-btn" onclick="importJSON()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Import JSON (restore)
+      </button>
+    </div>
+    <div id="entry-count" style="text-align:center;font-size:13px;color:var(--text2);margin-top:8px;"></div>
+  </div>
+</div>
+
+<!-- NOTES OVERLAY -->
+<div class="notes-overlay" id="notes-overlay" style="display:none;">
+  <div class="notes-sheet">
+    <div class="notes-title">What happened?</div>
+    <div class="notes-sub" id="notes-entry-info"></div>
+    <textarea class="notes-textarea" id="notes-text" placeholder="Who said what? Any commitments made? Verbal instructions received? Keep it factual..." rows="4"></textarea>
+    <div class="verbal-row">
+      <div class="verbal-label">Was this requested verbally (no paper trail)?</div>
+      <div class="toggle" id="verbal-toggle" onclick="toggleVerbal()">
+        <div class="toggle-thumb"></div>
+      </div>
+    </div>
+    <button class="save-btn" onclick="saveEntry()">Save Entry</button>
+    <button class="skip-btn" onclick="saveEntry(true)">Skip notes — save anyway</button>
+  </div>
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-overlay" id="modal-overlay" style="display:none;">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Add Label</div>
+    <input class="modal-input" id="modal-input" placeholder="Name..." />
+    <select class="modal-input" id="modal-cat-select" style="display:none;">
+      <option value="Operational">Operational</option>
+      <option value="Development">Development</option>
+      <option value="Break">Break</option>
+    </select>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn confirm" onclick="confirmModal()">Add</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="import-input" accept=".json" style="display:none;" onchange="handleImport(event)">
+
+<script>
+const DEFAULT_LABELS = [
+  {id:'l1', name:'On-Call / Incident', category:'Operational'},
+  {id:'l2', name:'Monitoring', category:'Operational'},
+  {id:'l3', name:'Maintenance', category:'Operational'},
+  {id:'l4', name:'Deployment', category:'Operational'},
+  {id:'l5', name:'Security Request', category:'Operational'},
+  {id:'l6', name:'Ticket / Support', category:'Operational'},
+  {id:'l7', name:'Teams / Support Triage', category:'Operational'},
+  {id:'l8', name:'Fly-by / Ad-hoc Request', category:'Operational'},
+  {id:'l9', name:'Meeting', category:'Operational'},
+  {id:'l10', name:'Admin', category:'Operational'},
+  {id:'l11', name:'HR / Compliance Training', category:'Operational'},
+  {id:'l12', name:'gbdrepo Migration', category:'Development'},
+  {id:'l13', name:'Archive Solution', category:'Development'},
+  {id:'l14', name:'SSIS / Integration', category:'Development'},
+  {id:'l15', name:'New Project', category:'Development'},
+  {id:'l16', name:'Build / Script', category:'Development'},
+  {id:'l17', name:'Required Research', category:'Development'},
+  {id:'l18', name:'Self-Directed Learning', category:'Development'},
+  {id:'l19', name:'Lunch', category:'Break'},
+  {id:'l20', name:'Break', category:'Break'},
+];
+const DEFAULT_REQUESTERS = [
+  {id:'r1', name:'Archie'},
+  {id:'r2', name:'Self'},
+  {id:'r3', name:'HR'},
+  {id:'r4', name:'On-Call / Incident'},
+  {id:'r5', name:'Teams Request'},
+  {id:'r6', name:'Other'},
+];
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem('worktrak_v1');
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return { labels: DEFAULT_LABELS, requesters: DEFAULT_REQUESTERS, entries: [] };
+}
+
+function saveData() {
+  localStorage.setItem('worktrak_v1', JSON.stringify(state));
+}
+
+let state = loadData();
+let timerInterval = null;
+let currentStart = null;
+let selectedCat = null;
+let selectedLabel = null;
+let isRunning = false;
+let offHoursManual = null;
+let verbalFlag = false;
+let currentEntry = null;
+let modalMode = null;
+
+function isOffHours() {
+  if (offHoursManual !== null) return offHoursManual;
+  const now = new Date();
+  const day = now.getDay();
+  const hour = now.getHours();
+  if (day === 0 || day === 6) return true;
+  if (hour < 6 || hour >= 16) return true;
+  return false;
+}
+
+function updateOffHoursUI() {
+  const oh = isOffHours();
+  const toggle = document.getElementById('offhours-toggle');
+  const label = document.getElementById('offhours-auto-label');
+  if (oh) { toggle.classList.add('on'); } else { toggle.classList.remove('on'); }
+  label.textContent = offHoursManual !== null ? 'Manually set' : 'Auto-detected from time';
+}
+
+function toggleOffHours() {
+  if (isRunning) return;
+  offHoursManual = !isOffHours();
+  updateOffHoursUI();
+}
+
+function toggleVerbal() {
+  verbalFlag = !verbalFlag;
+  const t = document.getElementById('verbal-toggle');
+  if (verbalFlag) t.classList.add('on'); else t.classList.remove('on');
+}
+
+function catClass(cat) {
+  if (cat === 'Operational') return 'op';
+  if (cat === 'Development') return 'dev';
+  if (cat === 'Break') return 'brk';
+  return '';
+}
+
+function renderCatPills() {
+  const cats = ['Operational', 'Development', 'Break'];
+  const container = document.getElementById('cat-pills');
+  container.innerHTML = cats.map(c => 
+    `<div class="pill ${selectedCat === c ? 'selected ' + catClass(c) : ''}" onclick="selectCat('${c}')">${c}</div>`
+  ).join('');
+}
+
+function selectCat(cat) {
+  if (isRunning) return;
+  selectedCat = cat;
+  selectedLabel = null;
+  renderCatPills();
+  renderLabelSelect();
+  updateStartBtn();
+}
+
+function renderLabelSelect() {
+  const sel = document.getElementById('label-select');
+  if (!selectedCat) {
+    sel.innerHTML = '<option value="">— select category first —</option>';
+    return;
+  }
+  const labels = state.labels.filter(l => l.category === selectedCat);
+  sel.innerHTML = '<option value="">— select label —</option>' +
+    labels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+  sel.value = '';
+}
+
+function onLabelChange() {
+  selectedLabel = document.getElementById('label-select').value;
+  updateStartBtn();
+}
+
+function renderRequesterSelect() {
+  const sel = document.getElementById('requester-select');
+  sel.innerHTML = '<option value="">— select requester —</option>' +
+    state.requesters.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+}
+
+function updateStartBtn() {
+  const btn = document.getElementById('start-btn');
+  if (isRunning) {
+    btn.textContent = '⬛  STOP';
+    btn.className = 'start-btn stop';
+    return;
+  }
+  if (selectedCat && selectedLabel) {
+    btn.textContent = '▶  START TIMER';
+    btn.className = 'start-btn go';
+  } else {
+    btn.textContent = 'Select category + label';
+    btn.className = 'start-btn disabled';
+  }
+}
+
+function handleStartStop() {
+  if (!isRunning && (!selectedCat || !selectedLabel)) return;
+  if (isRunning) {
+    stopTimer();
+  } else {
+    startTimer();
+  }
+}
+
+function startTimer() {
+  currentStart = new Date();
+  isRunning = true;
+  updateOffHoursUI();
+  timerInterval = setInterval(updateClock, 1000);
+  updateClock();
+  updateStartBtn();
+  updateTimerMeta();
+  document.getElementById('timer-label').textContent = 'Timer running...';
+  document.getElementById('timer-clock').classList.add('running');
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+  isRunning = false;
+  document.getElementById('timer-clock').classList.remove('running');
+  const endTime = new Date();
+  const durationMs = endTime - currentStart;
+  const durationMin = Math.round(durationMs / 60000);
+  const labelObj = state.labels.find(l => l.id === selectedLabel);
+  const requesterObj = state.requesters.find(r => r.id === document.getElementById('requester-select').value);
+  currentEntry = {
+    id: 'e' + Date.now(),
+    start: currentStart.toISOString(),
+    end: endTime.toISOString(),
+    durationMin,
+    category: selectedCat,
+    labelId: selectedLabel,
+    labelName: labelObj ? labelObj.name : selectedLabel,
+    requesterId: requesterObj ? requesterObj.id : '',
+    requesterName: requesterObj ? requesterObj.name : '',
+    offHours: isOffHours(),
+    notes: '',
+    verbal: false,
+  };
+  showNotesOverlay();
+  updateStartBtn();
+  document.getElementById('timer-label').textContent = 'Add notes then save';
+  resetClock();
+}
+
+function resetClock() {
+  document.getElementById('timer-clock').textContent = '00:00:00';
+  document.getElementById('timer-meta').innerHTML = '';
+}
+
+function updateClock() {
+  if (!currentStart) return;
+  const elapsed = Math.floor((Date.now() - currentStart) / 1000);
+  const h = Math.floor(elapsed / 3600);
+  const m = Math.floor((elapsed % 3600) / 60);
+  const s = elapsed % 60;
+  document.getElementById('timer-clock').textContent =
+    String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+function updateTimerMeta() {
+  const meta = document.getElementById('timer-meta');
+  const labelObj = state.labels.find(l => l.id === selectedLabel);
+  const cc = catClass(selectedCat);
+  let html = `<span class="meta-badge ${cc}">${selectedCat}</span>`;
+  if (labelObj) html += `<span class="meta-badge">${labelObj.name}</span>`;
+  if (isOffHours()) html += `<span class="meta-badge offhours">Off-Hours</span>`;
+  meta.innerHTML = html;
+}
+
+function showNotesOverlay() {
+  verbalFlag = false;
+  document.getElementById('verbal-toggle').classList.remove('on');
+  document.getElementById('notes-text').value = '';
+  const info = `${currentEntry.category} · ${currentEntry.labelName} · ${currentEntry.durationMin} min`;
+  document.getElementById('notes-entry-info').textContent = info;
+  document.getElementById('notes-overlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('notes-text').focus(), 300);
+}
+
+function saveEntry(skip) {
+  if (!currentEntry) return;
+  currentEntry.notes = skip ? '' : (document.getElementById('notes-text').value.trim());
+  currentEntry.verbal = verbalFlag;
+  state.entries.unshift(currentEntry);
+  saveData();
+  document.getElementById('notes-overlay').style.display = 'none';
+  currentEntry = null;
+  offHoursManual = null;
+  updateOffHoursUI();
+  document.getElementById('timer-label').textContent = 'Entry saved. Ready to track.';
+  updateStartBtn();
+  renderLog();
+  renderStats();
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  const navBtn = document.getElementById('nav-' + name);
+  if (navBtn) navBtn.classList.add('active');
+  if (name === 'log') renderLog();
+  if (name === 'stats') renderStats();
+  if (name === 'manage') renderManage();
+  if (name === 'export') renderExportCount();
+}
+
+let logFilter = 'all';
+function filterLog(f, el) {
+  logFilter = f;
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderLog();
+}
+
+function renderLog() {
+  const list = document.getElementById('log-list');
+  let entries = state.entries;
+  if (logFilter === 'Operational') entries = entries.filter(e => e.category === 'Operational');
+  else if (logFilter === 'Development') entries = entries.filter(e => e.category === 'Development');
+  else if (logFilter === 'Break') entries = entries.filter(e => e.category === 'Break');
+  else if (logFilter === 'offhours') entries = entries.filter(e => e.offHours);
+
+  if (entries.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>No entries yet. Start tracking!</div>';
+    return;
+  }
+
+  let html = '';
+  let lastDate = '';
+  entries.forEach(e => {
+    const d = new Date(e.start);
+    const dateStr = d.toLocaleDateString('en-US', {weekday:'long', month:'short', day:'numeric'});
+    if (dateStr !== lastDate) {
+      html += `<div class="section-date">${dateStr}</div>`;
+      lastDate = dateStr;
+    }
+    const timeStr = d.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+    const cc = catClass(e.category);
+    const dur = e.durationMin >= 60 ? 
+      Math.floor(e.durationMin/60) + 'h ' + (e.durationMin%60) + 'm' :
+      e.durationMin + ' min';
+    html += `<div class="log-entry">
+      <div class="log-entry-top">
+        <div class="log-label">${e.labelName}</div>
+        <div class="log-duration">${dur}</div>
+      </div>
+      <div class="log-meta">
+        <span class="log-badge ${cc}">${e.category}</span>
+        ${e.offHours ? '<span class="log-badge offhours">Off-Hours</span>' : ''}
+        ${e.verbal ? '<span class="log-badge verbal">Verbal only</span>' : ''}
+      </div>
+      <div class="log-time">${timeStr}${e.requesterName ? ' · ' + e.requesterName : ''}</div>
+      ${e.notes ? `<div class="log-notes">${e.notes}</div>` : ''}
+    </div>`;
+  });
+  list.innerHTML = html;
+}
+
+function renderStats() {
+  const now = new Date();
+  const todayStr = now.toDateString();
+  const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay());
+  
+  const today = state.entries.filter(e => new Date(e.start).toDateString() === todayStr);
+  const thisWeek = state.entries.filter(e => new Date(e.start) >= weekStart);
+  const all = state.entries;
+
+  function sumMin(arr) { return arr.reduce((s,e) => s + e.durationMin, 0); }
+  function catMin(arr, cat) { return sumMin(arr.filter(e => e.category === cat)); }
+  function pct(a,b) { return b === 0 ? 0 : Math.round(a/b*100); }
+
+  const todayOp = catMin(today, 'Operational');
+  const todayDev = catMin(today, 'Development');
+  const todayBrk = catMin(today, 'Break');
+  const todayOH = sumMin(today.filter(e => e.offHours));
+
+  const weekOp = catMin(thisWeek, 'Operational');
+  const weekDev = catMin(thisWeek, 'Development');
+  const weekTotal = weekOp + weekDev;
+
+  const allOp = catMin(all, 'Operational');
+  const allDev = catMin(all, 'Development');
+  const allTotal = allOp + allDev;
+
+  const missedLunch = checkMissedLunch();
+  const offHoursEntries = all.filter(e => e.offHours);
+  const offHoursMin = sumMin(offHoursEntries);
+
+  function fmtMin(m) {
+    if (m < 60) return m + 'm';
+    return Math.floor(m/60) + 'h ' + (m%60) + 'm';
+  }
+
+  let html = '';
+  if (missedLunch) {
+    html += `<div class="missed-break-badge">⚠️ No lunch break logged today</div>`;
+  }
+
+  html += `<div class="stats-grid">
+    <div class="mini-stat"><div class="mini-val op">${pct(allOp, allTotal)}%</div><div class="mini-label">Operational (all time)</div></div>
+    <div class="mini-stat"><div class="mini-val dev">${pct(allDev, allTotal)}%</div><div class="mini-label">Development (all time)</div></div>
+    <div class="mini-stat"><div class="mini-val warn">${fmtMin(offHoursMin)}</div><div class="mini-label">Off-hours total</div></div>
+    <div class="mini-stat"><div class="mini-val">${offHoursEntries.length}</div><div class="mini-label">Off-hours events</div></div>
+  </div>`;
+
+  html += `<div class="stats-card">
+    <div class="stats-title">Today</div>
+    <div class="stats-row"><span class="stats-name">Operational</span><span class="stats-val op">${fmtMin(todayOp)}</span></div>
+    <div class="stats-row"><span class="stats-name">Development</span><span class="stats-val dev">${fmtMin(todayDev)}</span></div>
+    <div class="stats-row"><span class="stats-name">Breaks</span><span class="stats-val brk">${fmtMin(todayBrk)}</span></div>
+    <div class="stats-row"><span class="stats-name">Off-hours</span><span class="stats-val warn">${fmtMin(todayOH)}</span></div>
+    <div class="stats-row"><span class="stats-name">Entries logged</span><span class="stats-val">${today.length}</span></div>
+  </div>`;
+
+  html += `<div class="stats-card">
+    <div class="stats-title">This week</div>
+    <div class="stats-row"><span class="stats-name">Operational</span><span class="stats-val op">${fmtMin(weekOp)} (${pct(weekOp,weekTotal)}%)</span></div>
+    <div class="stats-row"><span class="stats-name">Development</span><span class="stats-val dev">${fmtMin(weekDev)} (${pct(weekDev,weekTotal)}%)</span></div>
+    <div class="stats-row"><span class="stats-name">Total tracked</span><span class="stats-val">${fmtMin(weekTotal)}</span></div>
+  </div>`;
+
+  const topLabels = getTopLabels(all, 5);
+  if (topLabels.length > 0) {
+    html += `<div class="stats-card"><div class="stats-title">Top activities (all time)</div>`;
+    topLabels.forEach(l => {
+      html += `<div class="stats-row"><span class="stats-name">${l.name}</span><span class="stats-val">${fmtMin(l.min)}</span></div>`;
+    });
+    html += '</div>';
+  }
+
+  document.getElementById('stats-content').innerHTML = html;
+}
+
+function checkMissedLunch() {
+  const now = new Date();
+  if (now.getDay() === 0 || now.getDay() === 6) return false;
+  if (now.getHours() < 13) return false;
+  const todayStr = now.toDateString();
+  const todayBreaks = state.entries.filter(e => 
+    new Date(e.start).toDateString() === todayStr && e.category === 'Break'
+  );
+  return todayBreaks.length === 0;
+}
+
+function getTopLabels(entries, n) {
+  const map = {};
+  entries.forEach(e => {
+    if (!map[e.labelName]) map[e.labelName] = 0;
+    map[e.labelName] += e.durationMin;
+  });
+  return Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0,n).map(([name, min]) => ({name, min}));
+}
+
+function renderManage() {
+  const ll = document.getElementById('label-list');
+  ll.innerHTML = state.labels.map((l,i) =>
+    `<div class="manage-item">
+      <div><div class="manage-item-name">${l.name}</div><div class="manage-item-cat">${l.category}</div></div>
+      <button class="del-btn" onclick="deleteLabel('${l.id}')">✕</button>
+    </div>`
+  ).join('');
+
+  const rl = document.getElementById('requester-list');
+  rl.innerHTML = state.requesters.map(r =>
+    `<div class="manage-item">
+      <div class="manage-item-name">${r.name}</div>
+      <button class="del-btn" onclick="deleteRequester('${r.id}')">✕</button>
+    </div>`
+  ).join('');
+}
+
+function deleteLabel(id) {
+  state.labels = state.labels.filter(l => l.id !== id);
+  saveData();
+  renderManage();
+  renderLabelSelect();
+}
+
+function deleteRequester(id) {
+  state.requesters = state.requesters.filter(r => r.id !== id);
+  saveData();
+  renderManage();
+  renderRequesterSelect();
+}
+
+function showAddLabel() {
+  modalMode = 'label';
+  document.getElementById('modal-title').textContent = 'Add Label';
+  document.getElementById('modal-input').placeholder = 'Label name...';
+  document.getElementById('modal-cat-select').style.display = 'block';
+  document.getElementById('modal-input').value = '';
+  document.getElementById('modal-overlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('modal-input').focus(), 100);
+}
+
+function showAddRequester() {
+  modalMode = 'requester';
+  document.getElementById('modal-title').textContent = 'Add Requester';
+  document.getElementById('modal-input').placeholder = 'Name...';
+  document.getElementById('modal-cat-select').style.display = 'none';
+  document.getElementById('modal-input').value = '';
+  document.getElementById('modal-overlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('modal-input').focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').style.display = 'none';
+}
+
+function confirmModal() {
+  const name = document.getElementById('modal-input').value.trim();
+  if (!name) return;
+  if (modalMode === 'label') {
+    const cat = document.getElementById('modal-cat-select').value;
+    state.labels.push({id: 'l' + Date.now(), name, category: cat});
+  } else {
+    state.requesters.push({id: 'r' + Date.now(), name});
+  }
+  saveData();
+  closeModal();
+  renderManage();
+  renderLabelSelect();
+  renderRequesterSelect();
+}
+
+function renderExportCount() {
+  document.getElementById('entry-count').textContent = state.entries.length + ' entries in your log';
+}
+
+function exportJSON() {
+  const data = JSON.stringify(state, null, 2);
+  const blob = new Blob([data], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'worktrak-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportCSV() {
+  const headers = ['Date','Day','Time','Category','Label','Requester','Duration_Min','Off_Hours','Verbal_Only','Notes'];
+  const rows = state.entries.map(e => {
+    const d = new Date(e.start);
+    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    return [
+      d.toLocaleDateString('en-US'),
+      days[d.getDay()],
+      d.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}),
+      e.category,
+      e.labelName,
+      e.requesterName || '',
+      e.durationMin,
+      e.offHours ? 'YES' : 'NO',
+      e.verbal ? 'YES' : 'NO',
+      '"' + (e.notes || '').replace(/"/g,'""') + '"'
+    ].join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'worktrak-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importJSON() {
+  document.getElementById('import-input').click();
+}
+
+function handleImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (imported.entries && imported.labels && imported.requesters) {
+        const merge = confirm(`Import ${imported.entries.length} entries? This will merge with your existing ${state.entries.length} entries.`);
+        if (merge) {
+          const existingIds = new Set(state.entries.map(e => e.id));
+          const newEntries = imported.entries.filter(e => !existingIds.has(e.id));
+          state.entries = [...state.entries, ...newEntries].sort((a,b) => new Date(b.start) - new Date(a.start));
+          saveData();
+          alert('Import complete. ' + newEntries.length + ' new entries added.');
+          renderLog();
+          renderStats();
+          renderExportCount();
+        }
+      } else {
+        alert('Invalid file format.');
+      }
+    } catch(err) {
+      alert('Could not read file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+renderCatPills();
+renderLabelSelect();
+renderRequesterSelect();
+updateOffHoursUI();
+updateStartBtn();
+setInterval(updateOffHoursUI, 60000);
+</script>
+</body>
+</html>
