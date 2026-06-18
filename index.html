@@ -21,6 +21,7 @@
     --op: #ff6b6b;
     --dev: #4ecdc4;
     --brk: #45b7d1;
+    --oncall: #f7b731;
     --warn: #ffa552;
     --success: #51cf66;
     --danger: #ff6b6b;
@@ -56,6 +57,7 @@
   .meta-badge.dev { border-color: var(--dev); color: var(--dev); }
   .meta-badge.brk { border-color: var(--brk); color: var(--brk); }
   .meta-badge.offhours { border-color: var(--warn); color: var(--warn); }
+  .meta-badge.oncall { border-color: var(--oncall); color: var(--oncall); }
 
   .select-group { margin-bottom: 12px; }
   .select-label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -65,6 +67,7 @@
   .pill.selected.op { background: rgba(255,107,107,0.15); border-color: var(--op); color: var(--op); }
   .pill.selected.dev { background: rgba(78,205,196,0.15); border-color: var(--dev); color: var(--dev); }
   .pill.selected.brk { background: rgba(69,183,209,0.15); border-color: var(--brk); color: var(--brk); }
+  .pill.selected.oncall { background: rgba(247,183,49,0.15); border-color: var(--oncall); color: var(--oncall); }
 
   .select-native { width: 100%; background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; color: var(--text); font-size: 14px; appearance: none; -webkit-appearance: none; cursor: pointer; }
   .select-native:focus { outline: none; border-color: var(--accent); }
@@ -113,6 +116,7 @@
   .log-badge.op { background: rgba(255,107,107,0.15); color: var(--op); }
   .log-badge.dev { background: rgba(78,205,196,0.15); color: var(--dev); }
   .log-badge.brk { background: rgba(69,183,209,0.15); color: var(--brk); }
+  .log-badge.oncall { background: rgba(247,183,49,0.15); color: var(--oncall); }
   .log-badge.offhours { background: rgba(255,165,82,0.15); color: var(--warn); }
   .log-badge.verbal { background: rgba(108,99,255,0.15); color: var(--accent2); }
   .log-time { font-size: 11px; color: var(--text2); }
@@ -135,6 +139,7 @@
   .mini-val.op { color: var(--op); }
   .mini-val.dev { color: var(--dev); }
   .mini-val.brk { color: var(--brk); }
+  .mini-val.oncall { color: var(--oncall); }
   .mini-val.warn { color: var(--warn); }
 
   .manage-section { margin-bottom: 20px; }
@@ -225,6 +230,16 @@
       </select>
     </div>
 
+    <div class="select-group">
+      <div class="select-label">Location</div>
+      <select class="select-native" id="location-select">
+        <option value="Office">Office</option>
+        <option value="Remote / Home">Remote / Home</option>
+        <option value="Off-site">Off-site</option>
+        <option value="On-Call / Mobile">On-Call / Mobile</option>
+      </select>
+    </div>
+
     <div class="off-hours-row">
       <div>
         <div class="off-hours-label">Off-hours / Off-clock</div>
@@ -245,6 +260,7 @@
       <div class="filter-pill" onclick="filterLog('Operational', this)">Operational</div>
       <div class="filter-pill" onclick="filterLog('Development', this)">Development</div>
       <div class="filter-pill" onclick="filterLog('Break', this)">Break</div>
+      <div class="filter-pill" onclick="filterLog('On-Call', this)">On-Call</div>
       <div class="filter-pill" onclick="filterLog('offhours', this)">Off-Hours</div>
     </div>
     <div id="log-list"></div>
@@ -320,6 +336,7 @@
     <select class="modal-input" id="modal-cat-select" style="display:none;">
       <option value="Operational">Operational</option>
       <option value="Development">Development</option>
+      <option value="On-Call">On-Call</option>
       <option value="Break">Break</option>
     </select>
     <div class="modal-actions">
@@ -353,6 +370,10 @@ const DEFAULT_LABELS = [
   {id:'l18', name:'Self-Directed Learning', category:'Development'},
   {id:'l19', name:'Lunch', category:'Break'},
   {id:'l20', name:'Break', category:'Break'},
+  {id:'l21', name:'Standby', category:'On-Call'},
+  {id:'l22', name:'Incident Response', category:'On-Call'},
+  {id:'l23', name:'Follow-up / RCA', category:'On-Call'},
+  {id:'l24', name:'Comp Day', category:'On-Call'},
 ];
 const DEFAULT_REQUESTERS = [
   {id:'r1', name:'Archie'},
@@ -420,11 +441,12 @@ function catClass(cat) {
   if (cat === 'Operational') return 'op';
   if (cat === 'Development') return 'dev';
   if (cat === 'Break') return 'brk';
+  if (cat === 'On-Call') return 'oncall';
   return '';
 }
 
 function renderCatPills() {
-  const cats = ['Operational', 'Development', 'Break'];
+  const cats = ['Operational', 'Development', 'On-Call', 'Break'];
   const container = document.getElementById('cat-pills');
   container.innerHTML = cats.map(c => 
     `<div class="pill ${selectedCat === c ? 'selected ' + catClass(c) : ''}" onclick="selectCat('${c}')">${c}</div>`
@@ -519,6 +541,7 @@ function stopTimer() {
     labelName: labelObj ? labelObj.name : selectedLabel,
     requesterId: requesterObj ? requesterObj.id : '',
     requesterName: requesterObj ? requesterObj.name : '',
+    location: document.getElementById('location-select').value || 'Office',
     offHours: isOffHours(),
     notes: '',
     verbal: false,
@@ -558,7 +581,7 @@ function showNotesOverlay() {
   verbalFlag = false;
   document.getElementById('verbal-toggle').classList.remove('on');
   document.getElementById('notes-text').value = '';
-  const info = `${currentEntry.category} · ${currentEntry.labelName} · ${currentEntry.durationMin} min`;
+  const info = `${currentEntry.category} · ${currentEntry.labelName} · ${currentEntry.durationMin} min · ${currentEntry.location}`;
   document.getElementById('notes-entry-info').textContent = info;
   document.getElementById('notes-overlay').style.display = 'flex';
   setTimeout(() => document.getElementById('notes-text').focus(), 300);
@@ -605,6 +628,7 @@ function renderLog() {
   let entries = state.entries;
   if (logFilter === 'Operational') entries = entries.filter(e => e.category === 'Operational');
   else if (logFilter === 'Development') entries = entries.filter(e => e.category === 'Development');
+  else if (logFilter === 'On-Call') entries = entries.filter(e => e.category === 'On-Call');
   else if (logFilter === 'Break') entries = entries.filter(e => e.category === 'Break');
   else if (logFilter === 'offhours') entries = entries.filter(e => e.offHours);
 
@@ -637,7 +661,7 @@ function renderLog() {
         ${e.offHours ? '<span class="log-badge offhours">Off-Hours</span>' : ''}
         ${e.verbal ? '<span class="log-badge verbal">Verbal only</span>' : ''}
       </div>
-      <div class="log-time">${timeStr}${e.requesterName ? ' · ' + e.requesterName : ''}</div>
+      <div class="log-time">${timeStr}${e.requesterName ? ' · ' + e.requesterName : ''}${e.location ? ' · 📍' + e.location : ''}</div>
       ${e.notes ? `<div class="log-notes">${e.notes}</div>` : ''}
     </div>`;
   });
@@ -659,16 +683,19 @@ function renderStats() {
 
   const todayOp = catMin(today, 'Operational');
   const todayDev = catMin(today, 'Development');
+  const todayOC = catMin(today, 'On-Call');
   const todayBrk = catMin(today, 'Break');
   const todayOH = sumMin(today.filter(e => e.offHours));
 
   const weekOp = catMin(thisWeek, 'Operational');
   const weekDev = catMin(thisWeek, 'Development');
-  const weekTotal = weekOp + weekDev;
+  const weekOC = catMin(thisWeek, 'On-Call');
+  const weekTotal = weekOp + weekDev + weekOC;
 
   const allOp = catMin(all, 'Operational');
   const allDev = catMin(all, 'Development');
-  const allTotal = allOp + allDev;
+  const allOC = catMin(all, 'On-Call');
+  const allTotal = allOp + allDev + allOC;
 
   const missedLunch = checkMissedLunch();
   const offHoursEntries = all.filter(e => e.offHours);
@@ -687,14 +714,15 @@ function renderStats() {
   html += `<div class="stats-grid">
     <div class="mini-stat"><div class="mini-val op">${pct(allOp, allTotal)}%</div><div class="mini-label">Operational (all time)</div></div>
     <div class="mini-stat"><div class="mini-val dev">${pct(allDev, allTotal)}%</div><div class="mini-label">Development (all time)</div></div>
+    <div class="mini-stat"><div class="mini-val oncall">${pct(allOC, allTotal)}%</div><div class="mini-label">On-Call (all time)</div></div>
     <div class="mini-stat"><div class="mini-val warn">${fmtMin(offHoursMin)}</div><div class="mini-label">Off-hours total</div></div>
-    <div class="mini-stat"><div class="mini-val">${offHoursEntries.length}</div><div class="mini-label">Off-hours events</div></div>
   </div>`;
 
   html += `<div class="stats-card">
     <div class="stats-title">Today</div>
     <div class="stats-row"><span class="stats-name">Operational</span><span class="stats-val op">${fmtMin(todayOp)}</span></div>
     <div class="stats-row"><span class="stats-name">Development</span><span class="stats-val dev">${fmtMin(todayDev)}</span></div>
+    <div class="stats-row"><span class="stats-name">On-Call</span><span class="stats-val oncall">${fmtMin(todayOC)}</span></div>
     <div class="stats-row"><span class="stats-name">Breaks</span><span class="stats-val brk">${fmtMin(todayBrk)}</span></div>
     <div class="stats-row"><span class="stats-name">Off-hours</span><span class="stats-val warn">${fmtMin(todayOH)}</span></div>
     <div class="stats-row"><span class="stats-name">Entries logged</span><span class="stats-val">${today.length}</span></div>
@@ -704,6 +732,7 @@ function renderStats() {
     <div class="stats-title">This week</div>
     <div class="stats-row"><span class="stats-name">Operational</span><span class="stats-val op">${fmtMin(weekOp)} (${pct(weekOp,weekTotal)}%)</span></div>
     <div class="stats-row"><span class="stats-name">Development</span><span class="stats-val dev">${fmtMin(weekDev)} (${pct(weekDev,weekTotal)}%)</span></div>
+    <div class="stats-row"><span class="stats-name">On-Call</span><span class="stats-val oncall">${fmtMin(weekOC)} (${pct(weekOC,weekTotal)}%)</span></div>
     <div class="stats-row"><span class="stats-name">Total tracked</span><span class="stats-val">${fmtMin(weekTotal)}</span></div>
   </div>`;
 
@@ -827,7 +856,7 @@ function exportJSON() {
 }
 
 function exportCSV() {
-  const headers = ['Date','Day','Time','Category','Label','Requester','Duration_Min','Off_Hours','Verbal_Only','Notes'];
+  const headers = ['Date','Day','Time','Category','Label','Requester','Location','Duration_Min','Off_Hours','Verbal_Only','Notes'];
   const rows = state.entries.map(e => {
     const d = new Date(e.start);
     const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -838,6 +867,7 @@ function exportCSV() {
       e.category,
       e.labelName,
       e.requesterName || '',
+      e.location || '',
       e.durationMin,
       e.offHours ? 'YES' : 'NO',
       e.verbal ? 'YES' : 'NO',
